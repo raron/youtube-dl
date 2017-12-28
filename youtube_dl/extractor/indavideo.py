@@ -43,6 +43,8 @@ class IndavideoEmbedIE(InfoExtractor):
             'http://amfphp.indavideo.hu/SYm0json.php/player.playerHandler.getVideoData/%s' % video_id,
             video_id)['data']
 
+        hashes = video['filesh']
+
         title = video['title']
 
         video_urls = video.get('video_files', [])
@@ -57,6 +59,14 @@ class IndavideoEmbedIE(InfoExtractor):
             flv_url = '%s/%s' % (video_prefix, flv_file)
             if flv_url not in video_urls:
                 video_urls.append(flv_url)
+
+        video_urls2 = []
+        for i in video_urls:
+            height = self._search_regex(r'\.(\d{3,4})\.mp4(?:\?|$)', i, 'height', default=None)
+            if height in hashes:
+                video_urls2.append(i + '&token=' + hashes[height])
+
+        video_urls = video_urls2
 
         formats = [{
             'url': video_url,
@@ -133,7 +143,7 @@ class IndavideoIE(InfoExtractor):
 
         webpage = self._download_webpage(url, display_id)
         embed_url = self._search_regex(
-            r'<link[^>]+rel="video_src"[^>]+href="(.+?)"', webpage, 'embed url')
+            r'<div[^>]+id="player".*><iframe[^>]+src="(.+?)"', webpage, 'embed url')
 
         return {
             '_type': 'url_transparent',
